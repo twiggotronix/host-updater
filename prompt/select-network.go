@@ -9,9 +9,15 @@ import (
 	"github.com/twiggotronix/host-updater/network"
 )
 
-func SelectNetwork() (*string, error) {
+type SelectNetworkOptions struct {
+	PreferWifi bool
+}
+
+func SelectNetwork(options *SelectNetworkOptions) (*string, error) {
+	preferWifi := options != nil && options.PreferWifi
+
 	localAddressesFactoy := network.LocalAddressesFactoy{}
-	interfaces, err := localAddressesFactoy.GetLocalAddresses().GetNetworkInterfaces()
+	interfaces, err := localAddressesFactoy.GetLocalAddresses().GetNetworkInterfaces(&preferWifi)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -35,7 +41,13 @@ func SelectNetwork() (*string, error) {
 			return nil, surveyError
 		}
 	} else {
-		fmt.Println("Only one interface found, selecting...")
+		if preferWifi {
+			fmt.Print("Wifi interface found")
+		} else {
+			fmt.Printf("Only one interface found")
+		}
+		fmt.Printf(" : selecting %s\n", interfaces[0].Addr)
+
 		selectedAddress = interfaces[0].Addr
 	}
 	return &selectedAddress, nil

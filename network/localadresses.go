@@ -13,6 +13,7 @@ type Intf struct {
 
 type LocalAddresses struct {
 	NetNetworkInfo NetworkInfo
+	NetworkUtils   NetworkUtils
 }
 
 type LocalAddressesFactoy struct {
@@ -23,6 +24,7 @@ func (localAddressesFactoy LocalAddressesFactoy) GetLocalAddresses() LocalAddres
 	if localAddressesFactoy.LocalAddresses == nil {
 		localAddressesFactoy.LocalAddresses = &LocalAddresses{
 			NetNetworkInfo: &NetNetworkInfo{},
+			NetworkUtils:   &NetUtils{},
 		}
 	}
 
@@ -69,7 +71,8 @@ func ToIpAdresses(networkInterfaces []Intf) []string {
 	return interfaceAdresses
 }
 
-func (localAddresses LocalAddresses) GetNetworkInterfaces() ([]Intf, error) {
+func (localAddresses LocalAddresses) GetNetworkInterfaces(preferWifi *bool) ([]Intf, error) {
+	shouldPreferWifi := preferWifi != nil && *preferWifi
 	ifaces, err := localAddresses.NetNetworkInfo.Interfaces()
 	if err != nil {
 		return nil, err
@@ -84,18 +87,18 @@ func (localAddresses LocalAddresses) GetNetworkInterfaces() ([]Intf, error) {
 		if filterVirtualAndLoopbackNetworks(i) {
 			continue
 		}
-		fmt.Printf("  Flags: %s\n", i.Flags)
 		for _, a := range addrs {
 			switch v := a.(type) {
 			case *net.IPNet:
 				{
-					fmt.Println(i.Name, i.HardwareAddr.String())
 					if v.IP.DefaultMask() != nil {
-						intf := Intf{
-							Name: i.Name,
-							Addr: cleanupIp(v.String()),
+						if !shouldPreferWifi || localAddresses.NetworkUtils.IsWiFiInterface(i.Name) {
+							intf := Intf{
+								Name: i.Name,
+								Addr: cleanupIp(v.String()),
+							}
+							interfaces = append(interfaces, intf)
 						}
-						interfaces = append(interfaces, intf)
 					}
 				}
 			}

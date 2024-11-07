@@ -32,9 +32,47 @@ func TestGetNetworkInterfaces(t *testing.T) {
 		},
 	}
 	localAddresses.NetNetworkInfo = mockNetworkInfo
-	result, err := localAddresses.GetNetworkInterfaces()
+	preferWifi := false
+	result, err := localAddresses.GetNetworkInterfaces(&preferWifi)
 	assert.Nil(t, err)
 	assert.Equal(t, []Intf{{Name: "eth0", Addr: "127.0.0.1"}, {Name: "wlan0", Addr: "127.0.0.1"}}, result)
+}
+
+func TestGetWifiNetworkInterfaces(t *testing.T) {
+	localAddressesFactoy := LocalAddressesFactoy{}
+	localAddresses := localAddressesFactoy.GetLocalAddresses()
+	mockNetworkInfo := MockNetworkInfo{
+		InterfacesFunc: func() ([]net.Interface, error) {
+			ifaceArray := []net.Interface{
+				{
+					Index:        1,
+					MTU:          1500,
+					Name:         "eth0",
+					HardwareAddr: net.HardwareAddr{0x00, 0x14, 0x22, 0x01, 0x23, 0x45},
+					Flags:        net.FlagUp | net.FlagRunning,
+				},
+				{
+					Index:        1,
+					MTU:          1500,
+					Name:         "wlan0",
+					HardwareAddr: net.HardwareAddr{0x00, 0x14, 0x22, 0x01, 0x23, 0x45},
+					Flags:        net.FlagUp | net.FlagRunning,
+				},
+			}
+			return ifaceArray, nil
+		},
+	}
+	mockNetworkUtils := NetworkUtils{
+		IsWiFiInterface: func(networkName string) bool {
+			return true
+		},
+	}
+	localAddresses.NetNetworkInfo = mockNetworkInfo
+	localAddresses.NetworkUtils = mockNetworkUtils
+	preferWifi := true
+	result, err := localAddresses.GetNetworkInterfaces(&preferWifi)
+	assert.Nil(t, err)
+	assert.Equal(t, []Intf{{Name: "wlan0", Addr: "127.0.0.1"}}, result)
 }
 
 func TestToIpAdresses(t *testing.T) {

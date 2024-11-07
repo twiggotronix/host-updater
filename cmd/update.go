@@ -18,15 +18,18 @@ var updateCmd = &cobra.Command{
 		hostFile, _ := cmd.Flags().GetString("dest")
 		flag, _ := cmd.Flags().GetString("flag")
 		dryRun, _ := cmd.Flags().GetBool("dryRun")
-
-		selectedAddress, err := prompt.SelectNetwork()
-		if err != nil {
-			panic("Could not select network")
-		}
-		fmt.Printf("Selected Address : %s\n", *selectedAddress)
+		preferWifi, _ := cmd.Flags().GetBool("preferWifi")
 		fmt.Printf("hostFile : %s\n", hostFile)
 		fmt.Printf("flag : %s\n", flag)
 		fmt.Printf("dryRun : %t\n", dryRun)
+		fmt.Printf("preferWifi : %t\n", preferWifi)
+		networkSelectOptions := prompt.SelectNetworkOptions{
+			PreferWifi: preferWifi,
+		}
+		selectedAddress, err := prompt.SelectNetwork(&networkSelectOptions)
+		if err != nil {
+			panic("Could not select network")
+		}
 
 		fileUtilsFactory := utils.FileUtilsFactoy{}
 		fileUtils := fileUtilsFactory.GetFileUtils()
@@ -41,4 +44,5 @@ func init() {
 	updateCmd.Flags().StringP("dest", "e", constants.DefaultHostFilePath, "The file to edit")
 	updateCmd.Flags().StringP("flag", "f", "[location-host]", "the flag used in the host file")
 	updateCmd.Flags().BoolP("dryRun", "d", false, "if true, don't try to write to the file")
+	updateCmd.Flags().BoolP("preferWifi", "w", false, "if true, prefere a wifi network")
 }
